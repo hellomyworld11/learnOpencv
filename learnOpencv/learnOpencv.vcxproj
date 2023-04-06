@@ -151,9 +151,11 @@
   <ItemGroup>
     <ClCompile Include="ImgConvert.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Opencv_mxyBook.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ImgConvert.h" />
+    <ClInclude Include="Opencv_mxyBook.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
