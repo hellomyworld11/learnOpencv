@@ -11,12 +11,13 @@ int main(int argc, char *argv[])
 	VideoCapture vsrc("D:/opencvMdl/3D批量布线.wmv");
 	VideoCapture vsrcCama(0);
 	//namedWindow("testwindow", WINDOW_AUTOSIZE);
-	imshow("input", src);
+	//imshow("input", src);
 	//CImgConvert convert;
-	//convert.bitwise_demo(src);
+	//convert.mat_creation_demo(src);
 	//write your code
 	Opencv_mxyBook booktest;
-	booktest.test_avi_read(vsrc);
+	//booktest.test_img_add(src);
+	booktest.test_img_drwGeom(src);
 
 	waitKey(0);
 	destroyAllWindows();

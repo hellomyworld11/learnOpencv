@@ -20,10 +20,10 @@ void CImgConvert::mat_creation_demo(Mat &image)
 	dstClone = image.clone();
 	image.copyTo(dstCopy);
 
-	Mat m3 = Mat::zeros(Size(400, 400), CV_8UC3);
+	Mat m3 = Mat::zeros(Size(8, 8), CV_8UC3);
 	m3 = Scalar(0,255,0);
 	std::cout << "w:" << m3.cols << "h:" << m3.rows << "channls:" << m3.channels() << std::endl;
-	//std::cout << m3 << std::endl;
+	std::cout << m3 << std::endl;
 
 	Mat m4 = m3;
 	m4 = Scalar(255, 0, 0);
