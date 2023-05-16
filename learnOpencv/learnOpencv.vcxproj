@@ -150,11 +150,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ImgConvert.cpp" />
+    <ClCompile Include="LearnOpencv.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Opencv_mxyBook.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ImgConvert.h" />
+    <ClInclude Include="LearnOpencv.h" />
     <ClInclude Include="Opencv_mxyBook.h" />
   </ItemGroup>
   <ItemGroup>
