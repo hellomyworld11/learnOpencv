@@ -3,6 +3,10 @@
 #include <QAction>
 #include "ImgProcessTool.h"
 #include <QDebug>
+#include <QFileDialog>
+#include <QMessageBox>
+#include "HistoryMgr.h"
+#include "SkinManager.h"
 
 
 MenuBar::MenuBar(QWidget *parent)
@@ -63,8 +67,12 @@ void MenuBar::Menu_Edit()
 	QAction *pUndo = new QAction(QIcon(), QString::fromLocal8Bit("撤销"), this);
 	connect(pUndo, &QAction::triggered, this, &MenuBar::Undo);
 
+	actionsMap_[QString::fromLocal8Bit("撤销")] = pUndo;
+
 	QAction *pRedo = new QAction(QIcon(), QString::fromLocal8Bit("重做"), this);
 	connect(pRedo, &QAction::triggered, this, &MenuBar::Redo);
+
+	actionsMap_[QString::fromLocal8Bit("重做")] = pRedo;
 
 	QAction *pFullScreen = new QAction(QIcon(), QString::fromLocal8Bit("全屏显示"), this);
 	connect(pFullScreen, &QAction::triggered, this, &MenuBar::FullScreen);
@@ -91,21 +99,10 @@ void MenuBar::Menu_View()
 
 	QAction *pToolBox = new QAction(QIcon(), QString::fromLocal8Bit("工具箱"), this);
 	connect(pToolBox, &QAction::triggered, this, &MenuBar::ToolBox);
+	pToolBox->setCheckable(true);
+	pToolBox->setChecked(true);
+	actionsMap_[QString::fromLocal8Bit("工具箱")] = pToolBox;
 
-	QAction *pGeo = new QAction(QIcon(), QString::fromLocal8Bit("几何变换"), this);
-	connect(pGeo, &QAction::triggered, this, &MenuBar::GeoTranslate);
-
-	QAction *pGray = new QAction(QIcon(), QString::fromLocal8Bit("灰度变换"), this);
-	connect(pGray, &QAction::triggered, this, &MenuBar::GrayTranslate);
-
-	QAction *pEnhance = new QAction(QIcon(), QString::fromLocal8Bit("图像增强"), this);
-	connect(pEnhance, &QAction::triggered, this, &MenuBar::EnhanceSmooth);
-
-	QAction *pMorph = new QAction(QIcon(), QString::fromLocal8Bit("形态学处理"), this);
-	connect(pMorph, &QAction::triggered, this, &MenuBar::MorphologyProcess);
-
-	QAction *pColor = new QAction(QIcon(), QString::fromLocal8Bit("颜色模型"), this);
-	connect(pColor, &QAction::triggered, this, &MenuBar::ColorModel);
 
 	QAction *pImageWin = new QAction(QIcon(), QString::fromLocal8Bit("图像窗口"), this);
 	connect(pImageWin, &QAction::triggered, this, &MenuBar::ImageWindow);
@@ -123,12 +120,6 @@ void MenuBar::Menu_View()
 	connect(pDrawBar, &QAction::triggered, this, &MenuBar::DrawToolBar);
 
 	pView->addAction(pToolBox);
-	pView->addSeparator();
-	pView->addAction(pGeo);
-	pView->addAction(pGray);
-	pView->addAction(pEnhance);
-	pView->addAction(pMorph);
-	pView->addAction(pColor);
 	pView->addSeparator();
 	pView->addAction(pImageWin);
 	pView->addAction(pOutputWin);
@@ -189,9 +180,9 @@ void MenuBar::Menu_GrayTransform()
 	QAction *pLogtrans = new QAction(QIcon(), QString::fromLocal8Bit("对数变换"), this);
 	QAction *pGamma = new QAction(QIcon(), QString::fromLocal8Bit("伽马变换"), this);
 	QAction *pHisteq = new QAction(QIcon(), QString::fromLocal8Bit("直方图均衡化"), this);
-	connect(pLogtrans, &QAction::triggered, this, &MenuBar::AutoSize);
-	connect(pGamma, &QAction::triggered, this, &MenuBar::Large);
-	connect(pHisteq, &QAction::triggered, this, &MenuBar::Small);
+	connect(pLogtrans, &QAction::triggered, this, &MenuBar::LogTrans);
+	connect(pGamma, &QAction::triggered, this, &MenuBar::Gamma);
+	connect(pHisteq, &QAction::triggered, this, &MenuBar::Histeq);
 
 	QMenu *pMenuNolinear = new QMenu(QString::fromLocal8Bit("非线性变换"));
 	pMenuNolinear->addAction(pLogtrans);
@@ -202,10 +193,10 @@ void MenuBar::Menu_GrayTransform()
 	QAction *pGray = new QAction(QIcon(), QString::fromLocal8Bit("灰度图"), this);
 	QAction *pReverse = new QAction(QIcon(), QString::fromLocal8Bit("反转变换"), this);
 	QAction *pLinear = new QAction(QIcon(), QString::fromLocal8Bit("线性变换"), this);
-	connect(pBin, &QAction::triggered, this, &MenuBar::AutoSize);
-	connect(pGray, &QAction::triggered, this, &MenuBar::Large);
-	connect(pReverse, &QAction::triggered, this, &MenuBar::Small);
-	connect(pLinear, &QAction::triggered, this, &MenuBar::Small);
+	connect(pBin, &QAction::triggered, this, &MenuBar::Bin);
+	connect(pGray, &QAction::triggered, this, &MenuBar::Gray);
+	connect(pReverse, &QAction::triggered, this, &MenuBar::Reverse);
+	connect(pLinear, &QAction::triggered, this, &MenuBar::Linear);
 
 	pMenu->addMenu(pMenuNolinear);
 	pMenu->addAction(pBin);
@@ -364,51 +355,111 @@ void MenuBar::Menu_Help()
 	QAction *pAbout = new QAction(QIcon(), QString::fromLocal8Bit("关于"), this);
 	connect(pAbout, &QAction::triggered, this, &MenuBar::About);
 
-	QAction *pSet = new QAction(QIcon(), QString::fromLocal8Bit("设置"), this);
-	connect(pSet, &QAction::triggered, this, &MenuBar::Settings);
+	QMenu *pSet = new QMenu(QString::fromLocal8Bit("主题"), this);
+//	connect(pSet, &QAction::triggered, this, &MenuBar::Settings);
+
+	QAction *pBlack = new QAction(QIcon(), QString::fromLocal8Bit("黑色"), this);
+	QAction *pWhite = new QAction(QIcon(), QString::fromLocal8Bit("白色"), this);
+	QAction *pGreen = new QAction(QIcon(), QString::fromLocal8Bit("健康绿"), this);
+	connect(pBlack, &QAction::triggered, this, &MenuBar::Skin_Black);
+	connect(pWhite, &QAction::triggered, this, &MenuBar::Skin_White);
+	connect(pGreen, &QAction::triggered, this, &MenuBar::Skin_Green);
+
+	pSet->addAction(pBlack);
+	pSet->addAction(pWhite);
+	pSet->addAction(pGreen);
 
 	pHelp->addAction(pAbout);
-	pHelp->addAction(pSet);
+	pHelp->addMenu(pSet);
 }
 
 void MenuBar::NewFile()
 {
 	qDebug() << "NewFile...";
+	QImage img = QImage(500, 500, QImage::Format_RGB32);
+	img.fill(qRgb(255, 255, 255));
+	pParent_->RenderImage(img, true);
+	pParent_->Report(QString::fromLocal8Bit("new img: 500*500"));
 }
 
 void MenuBar::OpenFile()
 {
-
+	QString strFile = QFileDialog::getOpenFileName(this, QString::fromLocal8Bit("select img "),
+		".", QString::fromLocal8Bit("Images (*.jpg *.png *.bmp)"));
+	if (!strFile.isEmpty())
+	{
+		QImage img;
+		if (!img.load(strFile))
+		{
+			QMessageBox::information(this, QString::fromLocal8Bit("error"),
+				QString::fromLocal8Bit("open img error!"));
+		}
+		pParent_->RenderImage(img, true);
+		pParent_->Report("open img: " + strFile);
+	}
 }
 
 void MenuBar::SaveFile()
 {
-
+	QString strPath = pParent_->GetImgWindowHandle()->GetPath();
+	if (strPath.isEmpty())
+	{
+		SaveAs();
+	}
+	else {
+		QImage img = pParent_->GetImgWindowHandle()->GetImg();
+		img.save(strPath);
+		pParent_->Report("save img" + strPath);
+	}
 }
 
 void MenuBar::SaveAs()
 {
-
+	QString strFile = QFileDialog::getSaveFileName(this, "save file", ".",
+		"Images (*.jpg *.png *.bmp)");
+	if (!strFile.isEmpty())
+	{
+		QImage img = pParent_->GetImgWindowHandle()->GetImg();
+		img.save(strFile);
+		pParent_->Report("save img" + strFile);
+	}
 }
 
 void MenuBar::Undo()
 {
 	qDebug() << "Undo...";
+	HistoryMgr& historymgr = pParent_->GetHistoryMgr();
+	if (historymgr.canUndo())
+	{
+		QImage curimg = historymgr.undo();
+		pParent_->RenderImage(curimg, false);
+	}
+	UpdataUIState();
 }
 
 void MenuBar::Redo()
 {
 	qDebug() << "Redo...";
+
+	HistoryMgr& historyMgr = pParent_->GetHistoryMgr();
+	if (historyMgr.canRedo())
+	{
+		QImage curimg = historyMgr.redo();
+		pParent_->RenderImage(curimg, false);
+	}
+	UpdataUIState();
 }
 
 void MenuBar::FullScreen()
 {
 	qDebug() << "FullScreen...";
+	pParent_->showFullScreen();
 }
 
 void MenuBar::ExitFullScreen()
 {
 	qDebug() << "ExitFullScreen...";
+	pParent_->showMaximized();
 }
 
 void MenuBar::Find()
@@ -416,49 +467,72 @@ void MenuBar::Find()
 	qDebug() << "Find...";
 }
 
-void MenuBar::ToolBox() { qDebug() << "ToolBox..."; }
+void MenuBar::ToolBox() 
+{ 
+	qDebug() << "ToolBox..."; 
+	if (pParent_->GetToolWin()->isHidden())
+	{
+		pParent_->GetToolWin()->show();
+		actionsMap_[QString::fromLocal8Bit("工具箱")]->setChecked(true);
+	}
+	else {
+		pParent_->GetToolWin()->hide();
+		actionsMap_[QString::fromLocal8Bit("工具箱")]->setChecked(false);
+	}
+
+
+}
 void MenuBar::ImageWindow() { qDebug() << "ImageWindow..."; }
 void MenuBar::OutputWindow() { qDebug() << "OutputWindow..."; }
 void MenuBar::PropertyWindow() { qDebug() << "PropertyWindow..."; }
 void MenuBar::FileToolBar() { qDebug() << "FileToolBar..."; }
 void MenuBar::DrawToolBar() { qDebug() << "DrawToolBar..."; }
 
-void MenuBar::MorphologyProcess()
-{
-
-}
-
-void MenuBar::GeoTranslate() { qDebug() << "GeoTranslate"; }
-
-
-void MenuBar::GrayTranslate()
-{
-
-}
 
 void MenuBar::AutoSize()
 {
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QScrollArea *pArea = pParent_->GetScrollArea();
+	QDockWidget *pImgView = pParent_->GetImgView();
+	QImage img = pImgWin->GetImg();
+	QImage newimg;
 
+	qDebug() << "img: " << img.width() << " * " << img.height();
+	qDebug() << "imgwin: " << pImgWin->width() << " * " << pImgWin->height();
+	newimg = img.scaled(pImgView->width(), pImgView->height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Large()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().enlarge(srcimg, 1);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Small()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().enlarge(srcimg, -1);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Rotate()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().rodateByCenter(srcimg, 45);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::RRotate()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().rodateByCenter(srcimg, -45);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::CRotate()
@@ -468,167 +542,410 @@ void MenuBar::CRotate()
 
 void MenuBar::HFlip()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().flip(srcimg, 1);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::VFlip()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().flip(srcimg, 0);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Bin()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().bin(srcimg, 127);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Gray()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().gray(srcimg);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Reverse()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Reverse(srcimg);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::LogTrans()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().LogTrans(srcimg, 1);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Gamma()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Gamma(srcimg, 1);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Histeq()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Histeq(srcimg);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Linear()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Linear(srcimg, 50, 50);
+	pParent_->RenderImage(newimg);
 }
 
 
 void MenuBar::CircleDetect()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().CircleDetect(srcimg, 1, 30);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::LineDetect()
 {
-
-}
-
-void MenuBar::EnhanceSmooth() { qDebug() << "EnhanceSmooth"; }
-
-
-void MenuBar::ColorModel()
-{
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().LineDetect(srcimg );
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Normalize()
 {
-
+	qDebug() << "Normalize...";
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Normalize(srcimg, 5);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Gaussian()
 {
-
+	qDebug() << "Gaussian...";
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Gaussian(srcimg, 5);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Median()
 {
-
+	qDebug() << "Median...";
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Median(srcimg, 5);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Sobel()
 {
-
+	qDebug() << "Sobel...";
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Sobel(srcimg, 5);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Laplacian()
 {
-
+	qDebug() << "Laplacian...";
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Laplacian(srcimg, 5);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::Canny()
 {
-
+	qDebug() << "Canny...";
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Canny(srcimg, 5, 20, 80);
+	pParent_->RenderImage(newimg);
 }
 
 
 
 void MenuBar::RGB_R()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().splitBGR(srcimg, 2);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::RGB_B()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().splitBGR(srcimg, 0);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::RGB_G()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().splitBGR(srcimg, 1);
+	pParent_->RenderImage(newimg);
 }
 
 void MenuBar::HSV_H()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "HSV", 0);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::HSV_S()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "HSV", 1);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::HSV_V()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "HSV", 2);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::YUV_Y()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "YUV", 0);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::YUV_U()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "YUV", 1);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::YUV_V()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "YUV", 2);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::HLS_H()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "HLS", 0);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::HLS_L()
 {
-
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "HLS", 1);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
 }
 
 void MenuBar::HLS_S()
 {
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	if (srcimg.depth() != 8)
+	{
+		QImage Img = pParent_->GetImgProCess().splitColor(srcimg, "HLS", 2);
+		pParent_->RenderImage(Img);
+	}
+	else
+	{
+		QMessageBox message(QMessageBox::Information, tr("提示"), tr("该图像为灰度图像。"));
+		message.exec();
+	}
+}
+
+void MenuBar::Erode() 
+{ 
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Erode(srcimg, 0, 5, 1);
+	pParent_->RenderImage(newimg);
+}
+
+void MenuBar::Dilate() 
+{ 
+	qDebug() << "Dilate..."; 
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().Dilate(srcimg, 0, 5, 1);
+	pParent_->RenderImage(newimg);
+}
+void MenuBar::OpenOperation() 
+{
+	qDebug() << "OpenOperation..."; 
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().OpenOperation(srcimg, 0, 5, 1);
+	pParent_->RenderImage(newimg);
+}
+void MenuBar::CloseOperation() 
+{ 
+	qDebug() << "CloseOperation..."; 
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().CloseOperation(srcimg, 0, 5, 1);
+	pParent_->RenderImage(newimg);
+}
+void MenuBar::TopHat()
+{
+	qDebug() << "TopHat..."; 
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().TopHat(srcimg, 0, 5);
+	pParent_->RenderImage(newimg);
+}
+void MenuBar::BlackHat() 
+{
+	qDebug() << "BlackHat..."; 
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().BlackHat(srcimg, 0, 5);
+	pParent_->RenderImage(newimg);
+}
+void MenuBar::MorphologyGradient()
+{ 
+	qDebug() << "MorphologyGradient..."; 
+	ImgWindow *pImgWin = pParent_->GetImgWindowHandle();
+	QImage srcimg = pImgWin->GetImg();
+	QImage newimg = pParent_->GetImgProCess().MorphologyGradient(srcimg, 0, 5);
+	pParent_->RenderImage(newimg);
 
 }
 
-void MenuBar::Erode() { qDebug() << "Erode..."; }
-void MenuBar::Dilate() { qDebug() << "Dilate..."; }
-void MenuBar::OpenOperation() { qDebug() << "OpenOperation..."; }
-void MenuBar::CloseOperation() { qDebug() << "CloseOperation..."; }
-void MenuBar::TopHat() { qDebug() << "TopHat..."; }
-void MenuBar::BlackHat() { qDebug() << "BlackHat..."; }
-void MenuBar::MorphologyGradient() { qDebug() << "MorphologyGradient..."; }
+void MenuBar::About() 
+{
+	qDebug() << "About...";
 
-void MenuBar::About() { qDebug() << "About..."; }
-void MenuBar::Settings() { qDebug() << "Settings..."; }
+	QMessageBox aboutBox(pParent_);
+	aboutBox.setWindowTitle("img processtool v1.0");
+	aboutBox.setText("Hello, this is a tool which to process the img. ");
+	aboutBox.resize(600, 300);
+	aboutBox.exec();
+}
+void MenuBar::Settings()
+{ 
+	qDebug() << "Settings...";
+
+
+
+}
+
+void MenuBar::Skin_Black()
+{
+	SkinManager::instance()->setSkin(SkinManager::Black);
+}
+
+void MenuBar::Skin_White()
+{
+	SkinManager::instance()->setSkin(SkinManager::White);
+}
+
+void MenuBar::Skin_Green()
+{
+	SkinManager::instance()->setSkin(SkinManager::Green);
+}
+
+void MenuBar::UpdataUIState()
+{
+	actionsMap_[QString::fromLocal8Bit("撤销")]->setEnabled(pParent_->GetHistoryMgr().canUndo());
+	actionsMap_[QString::fromLocal8Bit("重做")]->setEnabled(pParent_->GetHistoryMgr().canRedo());
+}

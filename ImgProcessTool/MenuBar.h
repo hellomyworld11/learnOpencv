@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMenuBar>
+#include <QMap>
 class ImgProcessTool;
 
 
@@ -33,6 +34,9 @@ public:
 
 	void Menu_Help();
 
+	QAction* GetAction(QString actionname) { return actionsMap_[actionname]; }
+
+	void UpdataUIState();
 private slots:
 	//文件子菜单
 	void NewFile();
@@ -56,72 +60,120 @@ private slots:
 
 	// 视图
 	void ToolBox();
+
 	void ImageWindow();
+
 	void OutputWindow();
+
 	void PropertyWindow();
+
 	void FileToolBar();
+
 	void DrawToolBar();
-	void MorphologyProcess();
-	void GeoTranslate();
-	void GrayTranslate();
-	void EnhanceSmooth();
-	void ColorModel();
 
 	// 几何变换
 	void AutoSize();
+
 	void Large();
+
 	void Small();
+
 	void Rotate();
+
 	void RRotate();
+
 	void CRotate();
+
 	void HFlip();
+
 	void VFlip();
 	
 	// 灰度变换
 	void Bin();
+
 	void Gray();
+
 	void Reverse();
+
 	void LogTrans();
+
 	void Gamma();
+
 	void Histeq();
+
 	void Linear();
 
 	// 图像增强
 	void CircleDetect();
+
 	void LineDetect();
+
 	void Normalize();
+
 	void Gaussian();
+
 	void Median();
+
 	void Sobel();
+
 	void Laplacian();
+
 	void Canny();
 
 	// 颜色模型
 	void RGB_R();
+
 	void RGB_B();
+
 	void RGB_G();
+
 	void HSV_H();
+
 	void HSV_S();
+
 	void HSV_V();
+
 	void YUV_Y();
+
 	void YUV_U();
+
 	void YUV_V();
+
 	void HLS_H();
+
 	void HLS_L();
+
 	void HLS_S();
 
 	// 形态学
 	void Erode();
+
 	void Dilate();
+
 	void OpenOperation();
+
 	void CloseOperation();
+
 	void TopHat();
+
 	void BlackHat();
+
 	void MorphologyGradient();
 
 	// 帮助
 	void About();
+
 	void Settings();
+
+	void Skin_Black();
+
+	void Skin_White();
+
+	void Skin_Green();
+
 private:
+	
 	ImgProcessTool *pParent_ = nullptr;
+
+	QMap<QString, QAction*> actionsMap_;
 };
